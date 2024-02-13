@@ -1,23 +1,48 @@
 import sqlite3
+
+import ape.api.query
 from ape import Contract, networks
 from ape.api.networks import ProviderContextManager
+import pandas as pd
 
 conn = sqlite3.connect("txs.db")
 rpc = "https://rpc.ankr.com/optimism"
 date = "2024-02-10"
 
-WETH_ADDRESS = '0x4200000000000000000000000000000000000006'
-WETH_ABI = '[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"guy","type":"address"},{"name":"wad","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"src","type":"address"},{"name":"dst","type":"address"},{"name":"wad","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"wad","type":"uint256"}],"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"dst","type":"address"},{"name":"wad","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"deposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"},{"anonymous":false,"inputs":[{"indexed":true,"name":"src","type":"address"},{"indexed":true,"name":"guy","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"src","type":"address"},{"indexed":true,"name":"dst","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"dst","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"src","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Withdrawal","type":"event"}]'
+PYTH_ADDRESS = '0xff1a0f4744e8582DF1aE09D5611b887B6a12925C'
 
 provider = networks.create_custom_provider(rpc)
 
-with ProviderContextManager(provider):
-    contract = Contract(WETH_ADDRESS, abi=WETH_ABI)
+def update_dataframe():
+    with ProviderContextManager(provider):
+        contract = Contract(PYTH_ADDRESS, abi="IPythEvents.json")
 
-    start_block = 116122000
-    stop_block = 116123000
+        start_block = 116122000
+        stop_block = 116123000
 
-    df = contract.Transfer.query("*", start_block=start_block, stop_block=stop_block, step=250)
-    print(df)
+        df = contract.PriceFeedUpdate.query("*", start_block=start_block, stop_block=stop_block, step=250)
+        print(df)
 
-# poetry add eth-ape
+        df.to_pickle("df.pkl")
+
+def query_transaction(tx_hash):
+    with ProviderContextManager(provider):
+        print(ape.chain.history[tx_hash])
+
+# update_dataframe()
+
+df = pd.read_pickle("df.pkl")
+df = df[:5]
+# print(df)
+
+for index, row in df.iterrows():
+    transaction_hash = row['transaction_hash']
+    block_number = row['block_number']
+
+    print(transaction_hash)
+    query_transaction(transaction_hash)
+
+    # result = ape.api.query.BlockTransactionQuery(transaction_hash, block_id=block_number)
+
+    # print(result)
+
