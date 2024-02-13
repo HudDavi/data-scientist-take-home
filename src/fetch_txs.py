@@ -27,7 +27,8 @@ def update_dataframe():
 
 def query_transaction(tx_hash):
     with ProviderContextManager(provider):
-        print(ape.chain.history[tx_hash])
+        tx = ape.chain.history[tx_hash].transaction
+        print('sender: {} receiver: {}'.format(tx.sender, tx.receiver))
 
 # update_dataframe()
 
