@@ -1,49 +1,42 @@
 import sqlite3
-
 import ape.api.query
 from ape import Contract, networks
 from ape.api.networks import ProviderContextManager
-import pandas as pd
 
-conn = sqlite3.connect("txs.db")
+conn = sqlite3.connect("txs.db", isolation_level=None)
+c = conn.cursor()
+
+pyth_address = '0xff1a0f4744e8582DF1aE09D5611b887B6a12925C'
 rpc = "https://rpc.ankr.com/optimism"
-date = "2024-02-10"
 
-PYTH_ADDRESS = '0xff1a0f4744e8582DF1aE09D5611b887B6a12925C'
+# Pretend these values are command line arguments (or configurable in some way).
+# As time passes, imagine we will be running this script for successive blocks.
+start_block = 116100000
+end_block = 116110000
 
 provider = networks.create_custom_provider(rpc)
 
-def update_dataframe():
+def fetch_price_update_events(start_block, end_block):
+    '''
+    Fetch price update events on the Pyth contract. Returns a dataframe with some metadata of each event,
+    such as the hash of the transaction it occurred in.
+    '''
     with ProviderContextManager(provider):
-        contract = Contract(PYTH_ADDRESS, abi="IPythEvents.json")
+        contract = Contract(pyth_address, abi="IPythEvents.json")
+        return contract.PriceFeedUpdate.query("*", start_block=start_block, stop_block=end_block, step=250)
 
-        start_block = 116122000
-        stop_block = 116123000
-
-        df = contract.PriceFeedUpdate.query("*", start_block=start_block, stop_block=stop_block, step=250)
-        print(df)
-
-        df.to_pickle("df.pkl")
-
-def query_transaction(tx_hash):
+def fetch_transaction_info(tx_hash):
+    '''
+    Given a transaction hash, fetch the transaction receipt and metadata.
+    Note: please see the .transaction field on the result which contains much of the useful information.
+    '''
     with ProviderContextManager(provider):
-        tx = ape.chain.history[tx_hash].transaction
-        print('sender: {} receiver: {}'.format(tx.sender, tx.receiver))
+        return ape.chain.history[tx_hash]
 
-# update_dataframe()
+# FILL IN YOUR CODE HERE
 
-df = pd.read_pickle("df.pkl")
-df = df[:5]
-# print(df)
 
-for index, row in df.iterrows():
-    transaction_hash = row['transaction_hash']
-    block_number = row['block_number']
 
-    print(transaction_hash)
-    query_transaction(transaction_hash)
-
-    # result = ape.api.query.BlockTransactionQuery(transaction_hash, block_id=block_number)
-
-    # print(result)
-
+# Close the database
+c.close()
+conn.close()
