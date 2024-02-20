@@ -1,6 +1,6 @@
-# Douro Labs Data Scientist Take Home Problem
+# Data Scientist Take Home Problem
 
-In this test, we will fetch and analyze Pyth price update transactions.
+In this question, we will fetch and analyze Pyth price update transactions.
 The goal of this problem is to understand how much gas is being spent on Pyth transactions on the Optimism Network.
 We will answer this question by fetching the relevant transactions, storing them in a database, and then analyzing them.
 
@@ -51,7 +51,7 @@ In particular, for each hour of the day, we would like to see:
 We have provided a template script `src/analyze_txs.py` to help you get started.
 Please update this script to perform the necessary database queries and create a graph to answer the questions above.
 
-## Part 3: Writeup
+## Part 3: Submit Your Results
 
 Please save your graph from step 2 in the repository, as well as your changes to the files above.
 Then, create a tarball or zip file with the repository contents and email it to us so we can review your solution.
